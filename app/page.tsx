@@ -134,10 +134,10 @@ export default function Home() {
   const handleNextQuestion = async (
     event: KeyboardEvent<HTMLInputElement> & MouseEvent<HTMLButtonElement>
   ) => {
-    const keyWasEnter = event.type === "keydown" && event.key === "Enter"
-    const hasClicked = event.type === "click"
+    const keyIsEnter = event.type === "keydown" && event.key === "Enter"
+    const isClick = event.type === "click"
 
-    if (hasClicked || keyWasEnter) {
+    if (isClick || keyIsEnter) {
       if (data.currentQuestionIndex === (data.questions?.length ?? 0) - 1) {
         await handleSend()
       } else if (data.answers[data.currentQuestionIndex]) {
