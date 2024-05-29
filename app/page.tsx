@@ -79,7 +79,7 @@ export default function Home() {
         })
       })
     }
-  }, [data.extraInfo])
+  }, [data.questions])
 
   const handleSubmit = async (input: string) => {
     setInput(input)
@@ -188,7 +188,7 @@ export default function Home() {
   const leadMessage = useMemo(() => {
     const randomIndex = Math.floor(Math.random() * leadMessages.length)
     return leadMessages[randomIndex]
-  }, [data.title, leadMessages])
+  }, [data.title])
 
   const baseUrl = "https://www.themoviedb.org/movie/"
 
