@@ -69,7 +69,7 @@ export default function Home() {
           return {
             ...prev,
             extraInfo: {
-              ...prev.extraInfo,
+              ...prev.extraInfo!,
               philosophical: {
                 ...prev.extraInfo?.philosophical,
                 like: filteredResults,
@@ -79,7 +79,7 @@ export default function Home() {
         })
       })
     }
-  }, [data.questions])
+  }, [data.extraInfo])
 
   const handleSubmit = async (input: string) => {
     setInput(input)
@@ -188,7 +188,7 @@ export default function Home() {
   const leadMessage = useMemo(() => {
     const randomIndex = Math.floor(Math.random() * leadMessages.length)
     return leadMessages[randomIndex]
-  }, [data.title])
+  }, [data.title, leadMessages])
 
   const baseUrl = "https://www.themoviedb.org/movie/"
 
