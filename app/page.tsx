@@ -1,113 +1,274 @@
-import Image from "next/image";
+"use client"
+
+import { useEffect, useState, KeyboardEvent, MouseEvent, useMemo } from "react"
+import { getEvaluation, getQuestions } from "@/clients/server/google/googleai"
+import { Extra, Poster, Question } from "@/clients/server/google/types"
+import Header from "@/components/Header"
+import InputForm from "@/components/InputForm"
+import Questionnaire from "@/components/Questionnaire"
+import EvaluationResult from "@/components/EvaluationResult"
+import ExtraInfo from "@/components/ExtraInfo"
+import { CurvyArrowBack, External } from "@/components/Icons"
+
+const DEFAULT_DATA = {
+  title: null,
+  type: null,
+  questions: null,
+  extraInfo: null,
+  answers: {},
+  currentQuestionIndex: 0,
+  loading: false,
+  error: false,
+  movieId: null,
+}
+
+export interface Answers {
+  [key: number]: string
+}
+
+export interface IEvaluationResult {
+  evaluation: {
+    is_suitable: boolean
+    reason: string
+  }
+  recommendations: {
+    title: string
+    reason: string
+  }[]
+}
 
 export default function Home() {
+  const [input, setInput] = useState("")
+  const [data, setData] = useState<{
+    type: string | null
+    title: string | null
+    questions: Question[] | null
+    extraInfo: Extra | null
+    answers: Answers
+    currentQuestionIndex: number
+    loading: boolean
+    error: boolean
+    movieId: number | null
+  }>(DEFAULT_DATA)
+  const [evaluation, setEvaluation] = useState<null | IEvaluationResult>(null)
+
+  useEffect(() => {
+    if (data.extraInfo) {
+      let apiUrl = process.env.NEXT_PUBLIC_POSTERS_API
+      apiUrl += `?api_key=${process.env.NEXT_PUBLIC_POSTERS_API_KEY}`
+      const postersPromises = data.extraInfo.philosophical.like.map((movie) =>
+        fetch(`${apiUrl}&query=${movie.title}`)
+          .then((r) => r.json())
+          .then((r) => ({ ...r.results.at(0) }))
+      )
+
+      Promise.all(postersPromises).then((results: Poster[]) => {
+        const filteredResults = results.filter((r) => !!r?.poster_path)
+
+        setData((prev) => {
+          return {
+            ...prev,
+            extraInfo: {
+              ...prev.extraInfo,
+              philosophical: {
+                ...prev.extraInfo?.philosophical,
+                like: filteredResults,
+              },
+            },
+          }
+        })
+      })
+    }
+  }, [data.questions])
+
+  const handleSubmit = async (input: string) => {
+    setInput(input)
+    setData((prev) => ({ ...prev, loading: true }))
+    try {
+      const generatedQuestions = await getQuestions(input)
+      if (generatedQuestions) {
+        let apiUrl = process.env.NEXT_PUBLIC_POSTERS_API
+        apiUrl += `?api_key=${process.env.NEXT_PUBLIC_POSTERS_API_KEY}`
+
+        const movieId = await fetch(
+          `${apiUrl}&query=${generatedQuestions.title}`
+        )
+          .then((r) => r.json())
+          .then((r) => (r.results.at(0).id || null) as unknown as number | null)
+          .catch((error) => {
+            console.log(error)
+            return null
+          })
+
+        setData((prev) => ({
+          ...prev,
+          title: generatedQuestions.title,
+          type: generatedQuestions.type,
+          questions: generatedQuestions.questions,
+          extraInfo: generatedQuestions.extra,
+          currentQuestionIndex: 0,
+          answers: {},
+          loading: false,
+          movieId,
+        }))
+      } else {
+        setData((prev) => ({
+          ...prev,
+          loading: false,
+          error: true,
+        }))
+      }
+    } catch (error) {
+      console.error(error)
+      setData((prev) => ({ ...prev, loading: false }))
+    }
+  }
+
+  const handleQuestionSubmit = (questionIndex: number, answer: string) => {
+    setData((prev) => ({
+      ...prev,
+      answers: { ...prev.answers, [questionIndex]: answer },
+    }))
+  }
+
+  const handleNextQuestion = async (
+    event: KeyboardEvent<HTMLInputElement> & MouseEvent<HTMLButtonElement>
+  ) => {
+    const keyWasEnter = event.type === "keydown" && event.key === "Enter"
+    const hasClicked = event.type === "click"
+
+    if (hasClicked || keyWasEnter) {
+      if (data.currentQuestionIndex === (data.questions?.length ?? 0) - 1) {
+        await handleSend()
+      } else if (data.answers[data.currentQuestionIndex]) {
+        setData((prev) => ({
+          ...prev,
+          currentQuestionIndex: prev.currentQuestionIndex + 1,
+        }))
+      }
+    }
+  }
+
+  const handleSend = async () => {
+    setData((prev) => ({ ...prev, loading: true }))
+    try {
+      const questionsAndAnswers = data.questions?.reduce(
+        (acc, question, index) => {
+          acc[question.question] = data.answers[index]
+          return acc
+        },
+        {} as { [key: string]: string }
+      )
+
+      const evaluationResult = await getEvaluation(input, questionsAndAnswers!)
+
+      setEvaluation(evaluationResult)
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setData((prev) => ({ ...prev, loading: false }))
+    }
+  }
+
+  const handlePrevQuestion = () => {
+    setData((prev) => ({
+      ...prev,
+      currentQuestionIndex: prev.currentQuestionIndex - 1,
+    }))
+  }
+
+  const leadMessages = [
+    "🌟 You should see this one!",
+    "🎬 This one's definitely worth your time",
+    "🍿 Looks like a great choice for you!",
+    "👀 You're in for a treat with this one!",
+    "🎉 Don't miss out on this gem!",
+  ]
+
+  const leadMessage = useMemo(() => {
+    const randomIndex = Math.floor(Math.random() * leadMessages.length)
+    return leadMessages[randomIndex]
+  }, [data.title])
+
+  const baseUrl = "https://www.themoviedb.org/movie/"
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <>
+      <Header
+        reset={() => {
+          setData(DEFAULT_DATA)
+          setEvaluation(null)
+        }}
+      />
+      {!data.questions && (
+        <InputForm onSubmit={handleSubmit} loading={data.loading} />
+      )}
+      {!data.questions && data.extraInfo === null && data.error && (
+        <div className="w-full flex flex-col items-center gap-4 mt-8">
+          <p className="text-black text-xl">
+            Oops! We&apos;re experiencing difficulty finding the media you
+            requested. Hang tight and give it another go in a bit! If the issue
+            persists, feel free to try a different search query or check back
+            later. Thanks for your patience!
+          </p>
         </div>
-      </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+      )}
+      {data.questions && (
+        <>
+          <div className="flex justify-between w-full items-center">
+            <p className="w-full">For &quot;{input}&quot;</p>
+            <button
+              onClick={() => {
+                setData(DEFAULT_DATA)
+                setEvaluation(null)
+              }}
+              className="whitespace-nowrap flex gap-2 items-center border-transparent border-2 p-2 rounded-xl hover:border-black"
+            >
+              Try another one
+              <CurvyArrowBack />
+            </button>
+          </div>
+          <h2 className="w-full mb-2">
+            {data.movieId && (
+              <a
+                className="text-5xl font-bold flex items-end gap-3 md:text-black md:hover:text-blue-700 underline md:hover:underline transition-all text-blue-900 md:no-underline"
+                href={baseUrl + data.movieId}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                {data.title}
+                <External fill="rgb(29 78 216 / var(--tw-text-opacity))" />
+              </a>
+            )}
+            {!data.movieId && (
+              <span className="text-5xl font-bold">{data.title}</span>
+            )}
+          </h2>
+        </>
+      )}
+      {data.questions && data.questions.length > 0 && !evaluation && (
+        <Questionnaire
+          questions={data.questions}
+          currentQuestionIndex={data.currentQuestionIndex}
+          answers={data.answers}
+          loading={data.loading}
+          onAnswerSubmit={handleQuestionSubmit}
+          onNext={handleNextQuestion}
+          onPrev={handlePrevQuestion}
+          onSend={handleSend}
         />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+      )}
+      {evaluation && (
+        <EvaluationResult
+          evaluation={evaluation}
+          questions={data.questions!}
+          answers={data.answers}
+          leadMessage={leadMessage}
+        />
+      )}
+      {data.extraInfo && (
+        <ExtraInfo extraInfo={data.extraInfo} type={data.type} />
+      )}
+    </>
+  )
 }
