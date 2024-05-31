@@ -1,6 +1,7 @@
 "use server"
 
 import { TextServiceClient } from "@google-ai/generativelanguage"
+import { google } from "@google-ai/generativelanguage/build/protos/protos"
 import { GoogleAuth } from "google-auth-library"
 import { generateEvaluationPrompt, generateQuestionsPrompt } from "./prompts"
 import { QuestionsAndExtras } from "./types"
@@ -8,19 +9,38 @@ import { QuestionsAndExtras } from "./types"
 const baseConfig = {
   model: "models/text-bison-001",
 }
+
 const googleai = new TextServiceClient({
   authClient: new GoogleAuth().fromAPIKey(process.env.GOOGLEAI_API_KEY ?? ""),
 })
 
+async function generateTextWithErrorHandling(
+  config: google.ai.generativelanguage.v1beta.IGenerateTextRequest
+) {
+  try {
+    const response = await googleai.generateText(config)
+    if (response) {
+      return response
+    } else {
+      throw new Error("No response received from generateText")
+    }
+  } catch (error) {
+    console.error("Error generating text:", error)
+    throw error
+  }
+}
+
 export async function getQuestions(
   media: string
 ): Promise<QuestionsAndExtras | undefined> {
-  const response = await googleai.generateText({
+  const config = {
     ...baseConfig,
     prompt: {
       text: generateQuestionsPrompt(media),
     },
-  })
+  }
+
+  const response = await generateTextWithErrorHandling(config)
 
   if (response) {
     const questions = response[0]
@@ -50,12 +70,14 @@ export async function getEvaluation(
     [key: string]: string
   }
 ): Promise<any> {
-  const response = await googleai.generateText({
+  const config = {
     ...baseConfig,
     prompt: {
       text: generateEvaluationPrompt(mediaTitle, answers),
     },
-  })
+  }
+
+  const response = await generateTextWithErrorHandling(config)
 
   if (response) {
     const evaluation = response[0]
