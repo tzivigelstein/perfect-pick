@@ -15,7 +15,7 @@ export default function EvaluationResult({
   leadMessage,
 }: Props) {
   return (
-    <div className="mt-4 w-full">
+    <div className="mt-4 w-full text-black">
       <div className="bg-white p-4 rounded-xl shadow-md">
         <h3 className="font-semibold mb-2 text-xl">
           {evaluation.evaluation.is_suitable

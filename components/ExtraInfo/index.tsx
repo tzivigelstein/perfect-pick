@@ -22,18 +22,18 @@ const renderEmotionalCostEmojis = (emotionalCost: number) => {
 const basePosterUrl = "http://image.tmdb.org/t/p/w500/"
 const baseUrl = "https://www.themoviedb.org/movie/"
 
-export default function ExtraInfo({ extraInfo, type }: ExtraInfoProps) {
+export default function ExtraInfo({ extraInfo }: ExtraInfoProps) {
   return (
     <div className="mt-4 flex flex-col gap-4 w-full">
       <h3 className="text-xl font-bold">Extra</h3>
       <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-2xl bg-white aspect-video p-3 flex flex-col gap-3">
+        <div className="rounded-2xl text-black bg-white aspect-video p-3 flex flex-col gap-3">
           <p className="font-bold">Age Rating</p>
           <p className="text-center font-semibold text-2xl">
             {extraInfo.rating}
           </p>
         </div>
-        <div className="rounded-2xl bg-white aspect-video p-3 flex flex-col gap-3">
+        <div className="rounded-2xl text-black bg-white aspect-video p-3 flex flex-col gap-3">
           <p className="font-bold">Emotional cost</p>
           <p className="text-center font-semibold text-xl">
             {renderEmotionalCostEmojis(extraInfo.emotional_cost)}

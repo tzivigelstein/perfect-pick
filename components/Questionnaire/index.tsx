@@ -40,7 +40,7 @@ export default function Questionnaire({
         onChange={(e) => onAnswerSubmit(currentQuestionIndex, e.target.value)}
         onKeyDown={onNext}
         placeholder="Your answer"
-        className="p-2 mt-2 border border-gray-300 rounded-xl w-full"
+        className="p-2 mt-2 border border-gray-300 rounded-xl w-full text-black"
         disabled={loading}
       />
       <div className="mt-4 flex justify-between">
