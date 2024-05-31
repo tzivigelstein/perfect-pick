@@ -8,7 +8,7 @@ import InputForm from "@/components/InputForm"
 import Questionnaire from "@/components/Questionnaire"
 import EvaluationResult from "@/components/EvaluationResult"
 import ExtraInfo from "@/components/ExtraInfo"
-import { CurvyArrowBack, External } from "@/components/Icons"
+import { External } from "@/components/Icons"
 
 const DEFAULT_DATA = {
   title: null,
@@ -199,13 +199,18 @@ export default function Home() {
           setData(DEFAULT_DATA)
           setEvaluation(null)
         }}
+        hasData={
+          typeof data.questions === "object" &&
+          Array.isArray(data.questions) &&
+          data.questions.length > 0
+        }
       />
       {!data.questions && (
         <InputForm onSubmit={handleSubmit} loading={data.loading} />
       )}
       {!data.questions && data.extraInfo === null && data.error && (
         <div className="w-full flex flex-col items-center gap-4 mt-8">
-          <p className="text-black text-xl">
+          <p className="text-xl">
             Oops! We&apos;re experiencing difficulty finding the media you
             requested. Hang tight and give it another go in a bit! If the issue
             persists, feel free to try a different search query or check back
@@ -215,29 +220,17 @@ export default function Home() {
       )}
       {data.questions && (
         <>
-          <div className="flex justify-between w-full items-center">
-            <p className="w-full">For &quot;{input}&quot;</p>
-            <button
-              onClick={() => {
-                setData(DEFAULT_DATA)
-                setEvaluation(null)
-              }}
-              className="whitespace-nowrap flex gap-2 items-center border-transparent border-2 p-2 rounded-xl hover:border-black"
-            >
-              Try another one
-              <CurvyArrowBack />
-            </button>
-          </div>
+          <p className="w-full">For &quot;{input}&quot;</p>
           <h2 className="w-full mb-2">
             {data.movieId && (
               <a
-                className="text-5xl font-bold flex items-end gap-3 md:text-black md:hover:text-blue-700 underline md:hover:underline transition-all text-blue-900 md:no-underline"
+                className="text-5xl font-bold flex items-end gap-3 md:text-white md:hover:text-teal-300 underline md:hover:underline transition-all md:no-underline"
                 href={baseUrl + data.movieId}
                 target="_blank"
                 rel="noreferrer noopener"
               >
                 {data.title}
-                <External fill="rgb(29 78 216 / var(--tw-text-opacity))" />
+                <External path={{ className: "fill-teal-300" }} />
               </a>
             )}
             {!data.movieId && (
