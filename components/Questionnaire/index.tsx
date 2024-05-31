@@ -29,7 +29,7 @@ export default function Questionnaire({
 }: Props) {
   return (
     <div className="my-4 w-full">
-      <span className="text-gray-600 text-sm">
+      <span className="text-gray-100 text-sm">
         Question {currentQuestionIndex + 1} of {questions.length}
       </span>
       <p className="text-xl">{questions[currentQuestionIndex]?.question}</p>
@@ -46,7 +46,7 @@ export default function Questionnaire({
       <div className="mt-4 flex justify-between">
         <button
           onClick={onPrev}
-          className={`bg-gray-300 text-gray-700 px-4 py-2 rounded mr-2 ${
+          className={`bg-gray-200 text-gray-700 px-4 py-2 rounded mr-2 ${
             currentQuestionIndex === 0 ? "cursor-not-allowed" : ""
           }`}
           disabled={loading || currentQuestionIndex === 0}
@@ -56,7 +56,7 @@ export default function Questionnaire({
         {currentQuestionIndex != questions.length - 1 ? (
           <button
             onClick={onNext}
-            className={`bg-blue-500 text-white px-4 py-2 rounded ${
+            className={`bg-teal-500 text-white px-4 py-2 rounded ${
               currentQuestionIndex === questions.length - 1
                 ? "opacity-50 cursor-not-allowed"
                 : ""
@@ -68,7 +68,7 @@ export default function Questionnaire({
         ) : (
           <button
             onClick={onSend}
-            className={`bg-blue-500 text-white px-4 py-2 rounded ${
+            className={`bg-teal-500 text-white px-4 py-2 rounded ${
               currentQuestionIndex === questions.length - 1
                 ? "cursor-not-allowed"
                 : ""

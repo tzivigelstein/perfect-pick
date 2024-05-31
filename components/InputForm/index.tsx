@@ -29,11 +29,11 @@ export default function InputForm({ onSubmit, loading }: Props) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Enter the name of a book or a movie"
-          className="p-3 border border-gray-300 rounded-xl w-full"
+          className="p-3 border border-gray-300 rounded-xl w-full text-black"
         />
         <button
           onClick={handleSubmit}
-          className={`bg-blue-500 text-white px-4 py-2 rounded-xl ${
+          className={`bg-teal-400 px-4 py-2 rounded-xl ${
             loading ? "opacity-50 cursor-not-allowed" : ""
           }`}
           disabled={loading}
@@ -50,12 +50,12 @@ export default function InputForm({ onSubmit, loading }: Props) {
               onClick={() => setInput(example)}
             >
               {example}
-              <CurvyArrowUp width={18} stroke="#212121" />
+              <CurvyArrowUp width={18} stroke="#eee" />
             </button>
           </li>
         ))}
       </ul>
-      <p className="text-gray-600 text-left mb-6 w-4/5 p-2">
+      <p className="text-gray-300 text-left mb-6 w-4/5 p-2">
         Simply enter the name of a book or a movie in the input field above to
         get started. We will provide you with personalized recommendations based
         on your input.
